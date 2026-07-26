@@ -1,0 +1,98 @@
+resources:
+  jobs:
+    insurance_analytics_pipeline:
+      name: insurance_analytics_pipeline
+      email_notifications:
+        on_failure:
+          - nikhitha*08@gmail.com
+      tasks:
+        - task_key: bronze_ingestion
+          notebook_task:
+            notebook_path: /Workspace/RestApi/bronze/Bronze_Ingestion
+            source: WORKSPACE
+          max_retries: 2
+          min_retry_interval_millis: 300000
+          retry_on_timeout: true
+          disable_auto_optimization: false
+        - task_key: silver_adf_transformation
+          depends_on:
+            - task_key: bronze_ingestion
+          notebook_task:
+            notebook_path: /Workspace/RestApi/silver/silver_transform_for_adf_ingested
+            source: WORKSPACE
+          max_retries: 2
+          min_retry_interval_millis: 300000
+          retry_on_timeout: true
+          disable_auto_optimization: false
+        - task_key: dim_agent
+          depends_on:
+            - task_key: silver_adf_transformation
+          notebook_task:
+            notebook_path: /Workspace/RestApi/gold/dim_agent
+            source: WORKSPACE
+        - task_key: dim_countries
+          depends_on:
+            - task_key: silver_adf_transformation
+          notebook_task:
+            notebook_path: /Workspace/RestApi/gold/dim_countries
+            source: WORKSPACE
+        - task_key: dim_policy
+          depends_on:
+            - task_key: silver_adf_transformation
+          notebook_task:
+            notebook_path: /Workspace/RestApi/gold/dim_policy
+            source: WORKSPACE
+        - task_key: silver_databricks_transformation
+          depends_on:
+            - task_key: bronze_ingestion
+          notebook_task:
+            notebook_path: /Workspace/RestApi/silver/silver_transform_for_databricks_ingested
+            source: WORKSPACE
+          max_retries: 2
+          min_retry_interval_millis: 300000
+          retry_on_timeout: true
+          disable_auto_optimization: false
+        - task_key: dim_customers
+          depends_on:
+            - task_key: silver_databricks_transformation
+          notebook_task:
+            notebook_path: /Workspace/RestApi/gold/dim_countries
+            source: WORKSPACE
+        - task_key: customer_policy_bridge
+          depends_on:
+            - task_key: dim_policy
+            - task_key: dim_customers
+          notebook_task:
+            notebook_path: /Workspace/RestApi/gold/customer_policy_bridge
+            source: WORKSPACE
+        - task_key: fact_claims
+          depends_on:
+            - task_key: dim_policy
+            - task_key: dim_customers
+          notebook_task:
+            notebook_path: /Workspace/RestApi/gold/fact_claims
+            source: WORKSPACE
+        - task_key: fact_payments
+          depends_on:
+            - task_key: dim_policy
+            - task_key: dim_customers
+          notebook_task:
+            notebook_path: /Workspace/RestApi/gold/fact_payments
+            source: WORKSPACE
+        - task_key: data_quality
+          depends_on:
+            - task_key: fact_claims
+            - task_key: fact_payments
+            - task_key: customer_policy_bridge
+          notebook_task:
+            notebook_path: /Workspace/RestApi/data_quality_check
+            source: WORKSPACE
+        - task_key: kpi_views
+          depends_on:
+            - task_key: data_quality
+          notebook_task:
+            notebook_path: /Workspace/RestApi/gold/KPI_Views/create_kpi_views
+            source: WORKSPACE
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
