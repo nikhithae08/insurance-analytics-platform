@@ -1,0 +1,105 @@
+{
+    "name": "pl_master_api",
+    "properties": {
+        "activities": [
+            {
+                "name": "ForEach",
+                "type": "ForEach",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@variables('entitylist')",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "If_ingestion_type",
+                            "type": "IfCondition",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@equals(item().ingestionType,'ADF')",
+                                    "type": "Expression"
+                                },
+                                "ifFalseActivities": [
+                                    {
+                                        "name": "Ingestion_Notebook",
+                                        "type": "DatabricksNotebook",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "timeout": "0.12:00:00",
+                                            "retry": 0,
+                                            "retryIntervalInSeconds": 30,
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "notebookPath": "/RestApi/Ingestion.py",
+                                            "baseParameters": {
+                                                "entity_name": {
+                                                    "value": "@item().entityName",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "linkedServiceName": {
+                                            "referenceName": "ls_databricks",
+                                            "type": "LinkedServiceReference"
+                                        }
+                                    }
+                                ],
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "Execute_child_pipeline",
+                                        "type": "ExecutePipeline",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "pipeline": {
+                                                "referenceName": "pl_Ingest_RestAPI",
+                                                "type": "PipelineReference"
+                                            },
+                                            "waitOnCompletion": true,
+                                            "parameters": {
+                                                "p_entityName": {
+                                                    "value": "@item().entityName",
+                                                    "type": "Expression"
+                                                },
+                                                "p_relativePath": {
+                                                    "value": "@item().relativePath",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "variables": {
+            "entitylist": {
+                "type": "Array",
+                "defaultValue": [
+                    {
+                        "entityName": "insurance_customers",
+                        "relativePath": "wp-json/custom-api/datasets/insurance_customers",
+                        "ingestionType": "Databricks"
+                    }
+                ]
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2026-07-24T12:06:10Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

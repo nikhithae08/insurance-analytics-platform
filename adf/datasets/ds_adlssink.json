@@ -1,0 +1,35 @@
+{
+    "name": "ds_adlssink",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_adls",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "filename": {
+                "type": "string"
+            },
+            "foldername": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "Json",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": {
+                    "value": "@{dataset().filename}.json",
+                    "type": "Expression"
+                },
+                "folderPath": {
+                    "value": "@dataset().foldername",
+                    "type": "Expression"
+                },
+                "fileSystem": "bronze"
+            }
+        },
+        "schema": {}
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}
