@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-e2e-project-08"
+		},
+		"ls_adls_accountKey": {
+			"value": ""
+		},
+		"ls_databricks_accessToken": {
+			"value": ""
+		},
+		"ls_adls_properties_typeProperties_url": {
+			"value": "https://adlse2eproject.dfs.core.windows.net/"
+		},
+		"ls_databricks_properties_typeProperties_existingClusterId": {
+			"value": "0722-142112-o38f5hv1"
+		},
+		"ls_keyvault_properties_typeProperties_baseUrl": {
+			"value": "https://kve2eproject.vault.azure.net/"
+		},
+		"ls_onprem_properties_typeProperties_server": {
+			"value": "HOME"
+		},
+		"ls_onprem_properties_typeProperties_database": {
+			"value": "AdventureWorks2025"
+		},
+		"ls_onprem_properties_typeProperties_userName": {
+			"value": "onpremwork"
+		},
+		"ls_rest_properties_typeProperties_url": {
+			"value": "https://cloudanddatauniverse.com/"
+		},
+		"ls_rest_properties_typeProperties_userName": {
+			"value": "cduuser"
+		}
+	}
+}
