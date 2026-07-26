@@ -1,7 +1,9 @@
 # Documentation
 
-Contains:
+This folder contains supporting documentation for the Insurance Analytics Platform.
 
-- Architecture diagrams
-- Data model diagrams
-- Pipeline flow diagrams
+Contents:
+
+- Architecture Diagram
+- Data Flow Diagram
+- Data Model
