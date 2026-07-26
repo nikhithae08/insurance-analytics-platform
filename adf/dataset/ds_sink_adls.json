@@ -1,35 +1,38 @@
 {
-	"name": "ds_adlssink",
+	"name": "ds_sink_adls",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "ls_adls",
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {
-			"filename": {
+			"folderpath": {
 				"type": "string"
 			},
-			"foldername": {
+			"filename": {
 				"type": "string"
 			}
 		},
+		"folder": {
+			"name": "on-prem"
+		},
 		"annotations": [],
-		"type": "Json",
+		"type": "Parquet",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
 				"fileName": {
-					"value": "@{dataset().filename}.json",
+					"value": "@concat(dataset().filename,'.parquet')",
 					"type": "Expression"
 				},
-				"folderPath": {
-					"value": "@dataset().foldername",
+				"fileSystem": {
+					"value": "@dataset().folderpath",
 					"type": "Expression"
-				},
-				"fileSystem": "bronze"
-			}
+				}
+			},
+			"compressionCodec": "snappy"
 		},
-		"schema": {}
+		"schema": []
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
 }

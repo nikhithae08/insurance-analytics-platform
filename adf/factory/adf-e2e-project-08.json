@@ -1,0 +1,15 @@
+{
+	"name": "adf-e2e-project-08",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "uaenorth",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "a09633f0-2877-4605-9d5c-a375c6bfe831",
+		"tenantId": "ada39bdf-5fcc-49cb-9c16-ed5892b84964"
+	}
+}

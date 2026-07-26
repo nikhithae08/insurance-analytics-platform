@@ -1,256 +1,256 @@
 {
-    "name": "pl_Ingest_RestAPI",
-    "properties": {
-        "activities": [
-            {
-                "name": "Set_pageNumber",
-                "type": "SetVariable",
-                "dependsOn": [],
-                "policy": {
-                    "secureOutput": false,
-                    "secureInput": false
-                },
-                "userProperties": [],
-                "typeProperties": {
-                    "variableName": "pageNumber",
-                    "value": 1
-                }
-            },
-            {
-                "name": "Until",
-                "type": "Until",
-                "dependsOn": [
-                    {
-                        "activity": "Set_totalPages",
-                        "dependencyConditions": [
-                            "Succeeded"
-                        ]
-                    }
-                ],
-                "userProperties": [],
-                "typeProperties": {
-                    "expression": {
-                        "value": "@greater(variables('pageNumber'), variables('totalPages'))",
-                        "type": "Expression"
-                    },
-                    "activities": [
-                        {
-                            "name": "Copy_restapi_to_adls",
-                            "type": "Copy",
-                            "dependsOn": [],
-                            "policy": {
-                                "timeout": "0.12:00:00",
-                                "retry": 4,
-                                "retryIntervalInSeconds": 30,
-                                "secureOutput": false,
-                                "secureInput": false
-                            },
-                            "userProperties": [],
-                            "typeProperties": {
-                                "source": {
-                                    "type": "RestSource",
-                                    "httpRequestTimeout": "00:01:40",
-                                    "requestInterval": "00.00:00:00.010",
-                                    "requestMethod": "GET"
-                                },
-                                "sink": {
-                                    "type": "JsonSink",
-                                    "storeSettings": {
-                                        "type": "AzureBlobFSWriteSettings"
-                                    },
-                                    "formatSettings": {
-                                        "type": "JsonWriteSettings"
-                                    }
-                                },
-                                "enableStaging": false
-                            },
-                            "inputs": [
-                                {
-                                    "referenceName": "ds_restapi",
-                                    "type": "DatasetReference",
-                                    "parameters": {
-                                        "relativeUrl": {
-                                            "value": "@concat(pipeline().parameters.p_relativePath,'/?page=',string(variables('pageNumber')),'&limit=1000')",
-                                            "type": "Expression"
-                                        }
-                                    }
-                                }
-                            ],
-                            "outputs": [
-                                {
-                                    "referenceName": "ds_adlssink",
-                                    "type": "DatasetReference",
-                                    "parameters": {
-                                        "filename": {
-                                            "value": "@{pipeline().parameters.p_entityName}_page_@{variables('pageNumber')}",
-                                            "type": "Expression"
-                                        },
-                                        "foldername": {
-                                            "value": "@pipeline().parameters.p_entityName",
-                                            "type": "Expression"
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IncrementPage",
-                            "type": "SetVariable",
-                            "dependsOn": [
-                                {
-                                    "activity": "Update_nextpagenumber",
-                                    "dependencyConditions": [
-                                        "Succeeded"
-                                    ]
-                                }
-                            ],
-                            "policy": {
-                                "secureOutput": false,
-                                "secureInput": false
-                            },
-                            "userProperties": [],
-                            "typeProperties": {
-                                "variableName": "pageNumber",
-                                "value": {
-                                    "value": "@variables('nextPageNumber')",
-                                    "type": "Expression"
-                                }
-                            }
-                        },
-                        {
-                            "name": "Throttle_Wait",
-                            "type": "Wait",
-                            "dependsOn": [
-                                {
-                                    "activity": "IncrementPage",
-                                    "dependencyConditions": [
-                                        "Succeeded"
-                                    ]
-                                }
-                            ],
-                            "userProperties": [],
-                            "typeProperties": {
-                                "waitTimeInSeconds": 1
-                            }
-                        },
-                        {
-                            "name": "Update_nextpagenumber",
-                            "type": "SetVariable",
-                            "dependsOn": [
-                                {
-                                    "activity": "Copy_restapi_to_adls",
-                                    "dependencyConditions": [
-                                        "Succeeded"
-                                    ]
-                                }
-                            ],
-                            "policy": {
-                                "secureOutput": false,
-                                "secureInput": false
-                            },
-                            "userProperties": [],
-                            "typeProperties": {
-                                "variableName": "nextPageNumber",
-                                "value": {
-                                    "value": "@add(variables('pageNumber'),1)",
-                                    "type": "Expression"
-                                }
-                            }
-                        }
-                    ],
-                    "timeout": "0.01:00:00"
-                }
-            },
-            {
-                "name": "Get_total_pages",
-                "type": "WebActivity",
-                "dependsOn": [
-                    {
-                        "activity": "Set_pageNumber",
-                        "dependencyConditions": [
-                            "Succeeded"
-                        ]
-                    }
-                ],
-                "policy": {
-                    "timeout": "0.12:00:00",
-                    "retry": 3,
-                    "retryIntervalInSeconds": 30,
-                    "secureOutput": false,
-                    "secureInput": false
-                },
-                "userProperties": [],
-                "typeProperties": {
-                    "method": "GET",
-                    "url": {
-                        "value": "@concat('https://cloudanddatauniverse.com/',pipeline().parameters.p_relativePath,'/?page=1&limit=2000')",
-                        "type": "Expression"
-                    },
-                    "authentication": {
-                        "type": "Basic",
-                        "username": "cduuser",
-                        "password": {
-                            "type": "AzureKeyVaultSecret",
-                            "store": {
-                                "referenceName": "ls_keyvault",
-                                "type": "LinkedServiceReference"
-                            },
-                            "secretName": "rest-api-password"
-                        }
-                    }
-                }
-            },
-            {
-                "name": "Set_totalPages",
-                "type": "SetVariable",
-                "dependsOn": [
-                    {
-                        "activity": "Get_total_pages",
-                        "dependencyConditions": [
-                            "Succeeded"
-                        ]
-                    }
-                ],
-                "policy": {
-                    "secureOutput": false,
-                    "secureInput": false
-                },
-                "userProperties": [],
-                "typeProperties": {
-                    "variableName": "totalPages",
-                    "value": {
-                        "value": "@activity('Get_total_pages').output.total_pages",
-                        "type": "Expression"
-                    }
-                }
-            }
-        ],
-        "parameters": {
-            "p_entityName": {
-                "type": "string",
-                "defaultValue": "insurance_customers"
-            },
-            "p_relativePath": {
-                "type": "string",
-                "defaultValue": "wp-json/custom-api/datasets/insurance_customers"
-            }
-        },
-        "variables": {
-            "pageNumber": {
-                "type": "Integer",
-                "defaultValue": 1
-            },
-            "nextPageNumber": {
-                "type": "Integer",
-                "defaultValue": 1
-            },
-            "totalPages": {
-                "type": "Integer",
-                "defaultValue": 1
-            }
-        },
-        "annotations": [],
-        "lastPublishTime": "2026-07-24T08:54:48Z"
-    },
-    "type": "Microsoft.DataFactory/factories/pipelines"
+	"name": "pl_Ingest_RestAPI",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set_pageNumber",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pageNumber",
+					"value": 1
+				}
+			},
+			{
+				"name": "Until",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "Set_totalPages",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(variables('pageNumber'), variables('totalPages'))",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy_restapi_to_adls",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 4,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "RestSource",
+									"httpRequestTimeout": "00:01:40",
+									"requestInterval": "00.00:00:00.010",
+									"requestMethod": "GET"
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_restapi",
+									"type": "DatasetReference",
+									"parameters": {
+										"relativeUrl": {
+											"value": "@concat(pipeline().parameters.p_relativePath,'/?page=',string(variables('pageNumber')),'&limit=1000')",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_adlssink",
+									"type": "DatasetReference",
+									"parameters": {
+										"filename": {
+											"value": "@{pipeline().parameters.p_entityName}_page_@{variables('pageNumber')}",
+											"type": "Expression"
+										},
+										"foldername": {
+											"value": "@pipeline().parameters.p_entityName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "IncrementPage",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Update_nextpagenumber",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "pageNumber",
+								"value": {
+									"value": "@variables('nextPageNumber')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Throttle_Wait",
+							"type": "Wait",
+							"dependsOn": [
+								{
+									"activity": "IncrementPage",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": 1
+							}
+						},
+						{
+							"name": "Update_nextpagenumber",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Copy_restapi_to_adls",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "nextPageNumber",
+								"value": {
+									"value": "@add(variables('pageNumber'),1)",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"timeout": "0.01:00:00"
+				}
+			},
+			{
+				"name": "Get_total_pages",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Set_pageNumber",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 3,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "GET",
+					"url": {
+						"value": "@concat('https://cloudanddatauniverse.com/',pipeline().parameters.p_relativePath,'/?page=1&limit=2000')",
+						"type": "Expression"
+					},
+					"authentication": {
+						"type": "Basic",
+						"username": "cduuser",
+						"password": {
+							"type": "AzureKeyVaultSecret",
+							"store": {
+								"referenceName": "ls_keyvault",
+								"type": "LinkedServiceReference"
+							},
+							"secretName": "rest-api-password"
+						}
+					}
+				}
+			},
+			{
+				"name": "Set_totalPages",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Get_total_pages",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "totalPages",
+					"value": {
+						"value": "@activity('Get_total_pages').output.total_pages",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"p_entityName": {
+				"type": "string",
+				"defaultValue": "insurance_customers"
+			},
+			"p_relativePath": {
+				"type": "string",
+				"defaultValue": "wp-json/custom-api/datasets/insurance_customers"
+			}
+		},
+		"variables": {
+			"pageNumber": {
+				"type": "Integer",
+				"defaultValue": 1
+			},
+			"nextPageNumber": {
+				"type": "Integer",
+				"defaultValue": 1
+			},
+			"totalPages": {
+				"type": "Integer",
+				"defaultValue": 1
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-07-24T08:54:48Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
 }
