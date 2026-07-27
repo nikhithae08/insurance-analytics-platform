@@ -1,0 +1,106 @@
+{
+	"name": "pl_metadatadriven",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup1_metadata_table",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderQuery": "select * from pipeline_config where is_active = 1",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_onprem",
+						"type": "DatasetReference",
+						"parameters": {
+							"schemaName": "dbo",
+							"tablename": "pipeline_config"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup1_metadata_table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup1_metadata_table').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Execute_pl_copy",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_copy",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"sourceSchema": {
+										"value": "@item().source_schema",
+										"type": "Expression"
+									},
+									"sourceTable": {
+										"value": "@item().source_table",
+										"type": "Expression"
+									},
+									"sinkPath": {
+										"value": "@item().sink_folder_path",
+										"type": "Expression"
+									},
+									"loadType": {
+										"value": "@item().load_type",
+										"type": "Expression"
+									},
+									"watermarkColumn": {
+										"value": "@item().watermark_column",
+										"type": "Expression"
+									},
+									"tableID": {
+										"value": "@item().table_id",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "on-prem"
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-07-23T11:21:54Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
